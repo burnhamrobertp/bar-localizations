@@ -1,0 +1,140 @@
+name: Localization PR Review
+
+on:
+  pull_request:
+    paths:
+      - 'language/en/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-and-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect key deletions via JSON diff
+        id: check
+        run: |
+          DELETIONS_FOUND=false
+
+          for file in language/en/*.json; do
+            filename=$(basename "$file")
+
+            # Get the file from the base branch
+            if git show origin/${{ github.base_ref }}:language/en/$filename > /tmp/base_$filename 2>/dev/null; then
+              # Extract all nested keys from base and head versions, compare
+              python3 -c "
+          import json, sys
+
+          def extract_keys(obj, prefix=''):
+              keys = set()
+              if isinstance(obj, dict):
+                  for k, v in obj.items():
+                      full_key = f'{prefix}.{k}' if prefix else k
+                      keys.add(full_key)
+                      keys.update(extract_keys(v, full_key))
+              return keys
+
+          with open(sys.argv[1]) as f:
+              base_keys = extract_keys(json.load(f))
+          with open(sys.argv[2]) as f:
+              head_keys = extract_keys(json.load(f))
+
+          deleted = base_keys - head_keys
+          if deleted:
+              print('DELETED KEYS in $filename:')
+              for k in sorted(deleted):
+                  print(f'  - {k}')
+              sys.exit(1)
+          " /tmp/base_$filename "$file" || DELETIONS_FOUND=true
+            fi
+          done
+
+          echo "deletions=$DELETIONS_FOUND" >> $GITHUB_OUTPUT
+
+      - name: Check namespace ownership
+        id: ownership
+        shell: bash
+        run: |
+          PR_BRANCH="${{ github.head_ref }}"
+          VIOLATION=false
+          VIOLATION_FILE=$(mktemp)
+
+          # Enforce ownership only for automated upstream sync PRs
+          if [[ "$PR_BRANCH" == upstream/* ]]; then
+            SOURCE="${PR_BRANCH#upstream/}"
+
+            declare -A NAMESPACE_OWNER=(
+              [features.json]=bar-game
+              [interface.json]=bar-game
+              [tips.json]=bar-game
+              [units.json]=bar-game
+              [lobby.json]=bar-lobby
+            )
+
+            CHANGED_FILES=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD -- 'language/en/')
+
+            for filepath in $CHANGED_FILES; do
+              file=$(basename "$filepath")
+              EXPECTED="${NAMESPACE_OWNER[$file]:-}"
+              if [ -z "$EXPECTED" ]; then
+                VIOLATION=true
+                echo "- \`${file}\` — unrecognized namespace (no owner defined)" >> "$VIOLATION_FILE"
+              elif [ "$EXPECTED" != "$SOURCE" ]; then
+                VIOLATION=true
+                echo "- \`${file}\` is owned by **${EXPECTED}**, not **${SOURCE}**" >> "$VIOLATION_FILE"
+              fi
+            done
+          fi
+
+          echo "violation=$VIOLATION" >> $GITHUB_OUTPUT
+          {
+            echo 'details<<EOF'
+            cat "$VIOLATION_FILE"
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
+          rm -f "$VIOLATION_FILE"
+
+      - name: Auto-approve if safe
+        if: steps.check.outputs.deletions == 'false' && steps.ownership.outputs.violation == 'false'
+        uses: hmarr/auto-approve-action@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge if safe
+        if: steps.check.outputs.deletions == 'false' && steps.ownership.outputs.violation == 'false'
+        run: gh pr merge ${{ github.event.number }} --squash --auto
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Flag for review if deletions found
+        if: steps.check.outputs.deletions == 'true'
+        run: |
+          gh pr comment ${{ github.event.number }} --body "## ⚠️ Key Deletions Detected
+
+          This PR removes localization keys from English source files. Deleted keys will be removed from Transifex and all existing translations will be demoted to Translation Memory suggestions (not auto-restored if re-added).
+
+          **Manual review is required before merging.**"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Flag for review if namespace ownership violated
+        if: steps.ownership.outputs.violation == 'true'
+        run: |
+          gh pr comment ${{ github.event.number }} --body "## 🚫 Namespace Ownership Violation
+
+          This upstream sync PR modifies namespace files outside its ownership:
+
+          ${{ steps.ownership.outputs.details }}
+
+          Each upstream repository may only modify its own namespace files. See CONTRIBUTING.md for the ownership mapping.
+
+          **Manual review is required.**"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

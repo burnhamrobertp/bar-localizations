@@ -1,0 +1,69 @@
+name: Push translations to bar-lobby
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'language/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout bar-localizations
+        uses: actions/checkout@v4
+        with:
+          path: bar-localizations
+
+      - name: Checkout bar-lobby
+        uses: actions/checkout@v4
+        with:
+          repository: beyond-all-reason/bar-lobby
+          ref: master
+          token: ${{ secrets.DOWNSTREAM_TOKEN }}
+          path: bar-lobby
+
+      - name: Sync language files
+        id: diff
+        run: |
+          CHANGED=false
+
+          # Sync all language directories (en + translated) for all namespaces
+          for lang_dir in bar-localizations/language/*/; do
+            lang=$(basename "$lang_dir")
+            mkdir -p "bar-lobby/language/$lang"
+
+            for file in features.json interface.json tips.json units.json lobby.json; do
+              if [ -f "bar-localizations/language/$lang/$file" ]; then
+                if ! diff -q "bar-lobby/language/$lang/$file" "bar-localizations/language/$lang/$file" > /dev/null 2>&1; then
+                  CHANGED=true
+                  cp "bar-localizations/language/$lang/$file" "bar-lobby/language/$lang/$file"
+                fi
+              fi
+            done
+          done
+
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+
+      - name: Create or update pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          path: bar-lobby
+          token: ${{ secrets.DOWNSTREAM_TOKEN }}
+          commit-message: '[bar-localizations] Sync translation files'
+          branch: downstream/bar-localizations
+          title: '[bar-localizations] Sync translation files'
+          body: |
+            Automated sync of translation files from [`bar-localizations`](https://github.com/beyond-all-reason/bar-localizations).
+
+            Includes English source keys and all translated languages for all namespaces: `features.json`, `interface.json`, `tips.json`, `units.json`, `lobby.json`.
+
+            ---
+            *Created automatically by bar-localizations. bar-lobby is expected to adopt the standard `language/` directory layout.*
+          labels: localization

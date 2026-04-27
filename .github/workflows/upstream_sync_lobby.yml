@@ -1,0 +1,66 @@
+name: Sync from bar-lobby
+
+on:
+  schedule:
+    - cron: '45 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Fetch upstream English sources
+        run: |
+          REPO="beyond-all-reason/bar-lobby"
+          BRANCH="master"
+          BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/language/en"
+
+          # bar-lobby owns this namespace file
+          for file in lobby.json; do
+            HTTP_CODE=$(curl -sL -w "%{http_code}" -o "/tmp/$file" "${BASE_URL}/$file")
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "::warning::Failed to fetch $file (HTTP $HTTP_CODE)"
+              rm -f "/tmp/$file"
+            fi
+          done
+
+      - name: Compare and apply changes
+        id: diff
+        run: |
+          CHANGED=false
+
+          for file in lobby.json; do
+            if [ -f "/tmp/$file" ]; then
+              if ! diff -q "language/en/$file" "/tmp/$file" > /dev/null 2>&1; then
+                CHANGED=true
+                cp "/tmp/$file" "language/en/$file"
+              fi
+            fi
+          done
+
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+
+      - name: Create or update pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: '[bar-lobby] Sync English source strings'
+          branch: upstream/bar-lobby
+          title: '[bar-lobby] Sync English source strings'
+          body: |
+            Automated sync of English source files from [`beyond-all-reason/bar-lobby`](https://github.com/beyond-all-reason/bar-lobby/tree/master/language/en).
+
+            Only lobby-owned namespaces are synced: `lobby.json`.
+
+            ---
+            *Created automatically by the upstream sync workflow. If no key deletions are detected, this PR will be auto-approved and merged.*
+          labels: upstream-sync,bar-lobby

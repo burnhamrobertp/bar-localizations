@@ -1,0 +1,70 @@
+name: Push translations to bar-game
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'language/**'
+      - '!language/en/lobby.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout bar-localizations
+        uses: actions/checkout@v4
+        with:
+          path: bar-localizations
+
+      - name: Checkout bar-game
+        uses: actions/checkout@v4
+        with:
+          repository: beyond-all-reason/Beyond-All-Reason
+          ref: master
+          token: ${{ secrets.DOWNSTREAM_TOKEN }}
+          path: bar-game
+
+      - name: Sync language files
+        id: diff
+        run: |
+          CHANGED=false
+
+          # Sync all language directories (en + translated) for game-owned namespaces
+          for lang_dir in bar-localizations/language/*/; do
+            lang=$(basename "$lang_dir")
+            mkdir -p "bar-game/language/$lang"
+
+            for file in features.json interface.json tips.json units.json; do
+              if [ -f "bar-localizations/language/$lang/$file" ]; then
+                if ! diff -q "bar-game/language/$lang/$file" "bar-localizations/language/$lang/$file" > /dev/null 2>&1; then
+                  CHANGED=true
+                  cp "bar-localizations/language/$lang/$file" "bar-game/language/$lang/$file"
+                fi
+              fi
+            done
+          done
+
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+
+      - name: Create or update pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          path: bar-game
+          token: ${{ secrets.DOWNSTREAM_TOKEN }}
+          commit-message: '[bar-localizations] Sync translation files'
+          branch: downstream/bar-localizations
+          title: '[bar-localizations] Sync translation files'
+          body: |
+            Automated sync of translation files from [`bar-localizations`](https://github.com/beyond-all-reason/bar-localizations).
+
+            Includes English source keys and all translated languages for game-owned namespaces: `features.json`, `interface.json`, `tips.json`, `units.json`.
+
+            ---
+            *Created automatically by bar-localizations. This PR only contains game-owned namespace files.*
+          labels: localization
