@@ -13,7 +13,7 @@ This repository is the centralized source of truth for all Beyond All Reason loc
 
 The daily upstream sync workflows will detect your changes and open a PR here. Additions and edits are auto-approved. Deletions require manual review.
 
-**When to PR directly against this repo:** Only for cross-cutting changes that span multiple namespaces, translation-infrastructure fixes, or edits that don't belong in either source repo. Direct PRs are the exception, not the norm.
+**When to PR directly against this repo:** Only for cross-cutting changes that span multiple namespaces, translation-infrastructure fixes, or edits that don't belong in either source repo. Shared strings that aren't owned by any single consumer go in the `common` namespace (`common.json`), which lives only here and isn't synced from upstream. Direct PRs are the exception, not the norm.
 
 ## How to contribute translations
 
@@ -30,6 +30,7 @@ Each JSON file represents a namespace with a single **upstream owner** - the rep
 | `tips.json` | bar-game | `upstream_sync_game.yml` |
 | `units.json` | bar-game | `upstream_sync_game.yml` |
 | `lobby.json` | bar-lobby | `upstream_sync_lobby.yml` |
+| `common.json` | bar-localizations | direct PRs (not synced upstream) |
 
 Automated upstream sync PRs are validated against this ownership mapping. A sync from bar-game cannot modify `lobby.json`, and vice versa. Violations are flagged for manual review.
 

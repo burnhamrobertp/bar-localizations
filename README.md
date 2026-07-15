@@ -46,6 +46,7 @@ Three automated pipelines keep everything in sync. Each links to a diagram with 
 | `tips.json` | bar-game |
 | `units.json` | bar-game |
 | `lobby.json` | bar-lobby |
+| `common.json` | bar-localizations (direct edits) |
 
 ## Workflows
 
