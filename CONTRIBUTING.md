@@ -8,8 +8,8 @@ This repository is the centralized source of truth for all Beyond All Reason loc
 
 **Make changes in the repo that owns the namespace**, not here. Changes are synced to this repo automatically.
 
-- **Game strings** (`features.json`, `interface.json`, `tips.json`, `units.json`) — edit in [bar-game](https://github.com/beyond-all-reason/Beyond-All-Reason) under `language/en/`
-- **Lobby strings** (`lobby.json`) — edit in [bar-lobby](https://github.com/beyond-all-reason/bar-lobby) under `language/en/`
+- **Game strings** (`features.json`, `interface.json`, `tips.json`, `units.json`) - edit in [bar-game](https://github.com/beyond-all-reason/Beyond-All-Reason) under `language/en/`
+- **Lobby strings** (`lobby.json`) - edit in [bar-lobby](https://github.com/beyond-all-reason/bar-lobby) under `language/en/`
 
 The daily upstream sync workflows will detect your changes and open a PR here. Additions and edits are auto-approved. Deletions require manual review.
 
@@ -17,11 +17,11 @@ The daily upstream sync workflows will detect your changes and open a PR here. A
 
 ## How to contribute translations
 
-Translations are managed through [Transifex](https://www.transifex.com/). Join the BAR project on Transifex to contribute. Do not edit non-English files in this repo — they are overwritten by Transifex on every sync.
+Translations are managed through [Transifex](https://www.transifex.com/). Join the BAR project on Transifex to contribute. Do not edit non-English files in this repo - they are overwritten by Transifex on every sync.
 
 ## Namespace ownership
 
-Each JSON file represents a namespace with a single **upstream owner** — the repository where English source strings originate.
+Each JSON file represents a namespace with a single **upstream owner** - the repository where English source strings originate.
 
 | File | Owner | Synced via |
 |------|-------|------------|

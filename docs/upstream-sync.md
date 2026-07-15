@@ -10,7 +10,7 @@ flowchart TD
     D --> F["PR on upstream/bar-lobby branch"]
     E --> G{"localization_pr_review.yml"}
     F --> G
-    G -->|no deletions| H["✅ Auto-approve + merge"]
-    G -->|deletions detected| I["⚠️ Flag for manual review"]
-    G -->|wrong namespace| J["🚫 Block"]
+    G -->|no deletions| H["Auto-approve + merge"]
+    G -->|deletions detected| I["Flag for manual review"]
+    G -->|wrong namespace| J["Block"]
 ```

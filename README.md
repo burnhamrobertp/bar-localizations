@@ -15,7 +15,7 @@ Each namespace has a single owning repo (see [Namespace Ownership](#namespace-ow
 3. The upstream sync opens a PR here within 24 hours (additions/edits auto-merge; deletions require review)
 4. Translations flow back to your repo automatically via downstream sync
 
-> **Why are deletions flagged?** Removing a key from Transifex is destructive — existing translations are permanently demoted to suggestions and must be manually re-accepted per language.
+> **Why are deletions flagged?** Removing a key from Transifex is destructive - existing translations are permanently demoted to suggestions and must be manually re-accepted per language.
 
 ### For translators
 
@@ -53,17 +53,17 @@ All seven workflows also support manual `workflow_dispatch`.
 
 | Workflow | Trigger | Auto? |
 |----------|---------|-------|
-| `upstream_sync_game.yml` | Daily 04:30 UTC | ✅ |
-| `upstream_sync_lobby.yml` | Daily 04:45 UTC | ✅ |
-| `localization_pr_review.yml` | PRs touching `language/en/**` | ✅ adds / ❌ deletes |
-| `transifex_rebase.yml` | Weekly Monday 05:15 UTC | ✅ |
-| `transifex_merge.yml` | Transifex bot PR merged | ✅ |
-| `downstream_sync_game.yml` | Push to `master` | ✅ |
-| `downstream_sync_lobby.yml` | Push to `master` | ✅ |
+| `upstream_sync_game.yml` | Daily 04:30 UTC | Yes |
+| `upstream_sync_lobby.yml` | Daily 04:45 UTC | Yes |
+| `localization_pr_review.yml` | PRs touching `language/en/**` | Adds auto, deletes flagged |
+| `transifex_rebase.yml` | Weekly Monday 05:15 UTC | Yes |
+| `transifex_merge.yml` | Transifex bot PR merged | Yes |
+| `downstream_sync_game.yml` | Push to `master` | Yes |
+| `downstream_sync_lobby.yml` | Push to `master` | Yes |
 
 ## Supported Languages
 
-`en` (source) · `cs` · `de` · `es` · `fr` · `hr` · `it` · `lt` · `ru` · `zh`
+`en` (source), `cs`, `de`, `es`, `fr`, `hr`, `it`, `lt`, `ru`, `zh`
 
 ## Contributing
 

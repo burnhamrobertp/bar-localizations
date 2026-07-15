@@ -85,7 +85,7 @@ jobs:
               EXPECTED="${NAMESPACE_OWNER[$file]:-}"
               if [ -z "$EXPECTED" ]; then
                 VIOLATION=true
-                echo "- \`${file}\` — unrecognized namespace (no owner defined)" >> "$VIOLATION_FILE"
+                echo "- \`${file}\` - unrecognized namespace (no owner defined)" >> "$VIOLATION_FILE"
               elif [ "$EXPECTED" != "$SOURCE" ]; then
                 VIOLATION=true
                 echo "- \`${file}\` is owned by **${EXPECTED}**, not **${SOURCE}**" >> "$VIOLATION_FILE"
@@ -116,7 +116,7 @@ jobs:
       - name: Flag for review if deletions found
         if: steps.check.outputs.deletions == 'true'
         run: |
-          gh pr comment ${{ github.event.number }} --body "## ⚠️ Key Deletions Detected
+          gh pr comment ${{ github.event.number }} --body "## Key Deletions Detected
 
           This PR removes localization keys from English source files. Deleted keys will be removed from Transifex and all existing translations will be demoted to Translation Memory suggestions (not auto-restored if re-added).
 
@@ -127,7 +127,7 @@ jobs:
       - name: Flag for review if namespace ownership violated
         if: steps.ownership.outputs.violation == 'true'
         run: |
-          gh pr comment ${{ github.event.number }} --body "## 🚫 Namespace Ownership Violation
+          gh pr comment ${{ github.event.number }} --body "## Namespace Ownership Violation
 
           This upstream sync PR modifies namespace files outside its ownership:
 
